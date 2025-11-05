@@ -1,12 +1,17 @@
 #include "../include/cobrinha.h"
 #include "../include/nob.h"
-Head init_head(int x, int y, char repr, Movement mov);
+#include <ncurses.h>
+
+Board b = {0};
+Board c = {0};
+Head init_head(int x, int y, Movement mov);
 Body init_body(char repr);
-void snake_update(Snake *self, int grow) {
+int snake_eat_food(Snake *snake, Board *c);
+void snake_update(Snake *self) {
+  int grow = snake_eat_food(self, &c);
   Point old_head = self->head.position;
   snake_movement(self);
   Point prev_pos = old_head;
-
   for (size_t i = 0; i < self->body.count; ++i) {
     Point current_pos = self->body.items[i];
     self->body.items[i] = prev_pos;
@@ -27,18 +32,31 @@ int snake_check_collision(Snake *self) {
   return 0;
 }
 
+void snake_draw(void *_self, WINDOW *at) {
+  Snake *self = (Snake *)_self;
+  int h, w;
+  getmaxyx(at, h, w);
+  snake_check_bounds(self, h, w);
+  nob_da_foreach(Point, p, &self->body) {
+    mvwaddch(at, p->y, p->x, self->body.repr);
+  }
+  mvwaddch(at, self->head.position.y, self->head.position.x, self->repr);
+  return;
+}
+
 Snake *snake_init(int x, int y) {
   Snake *snake = (Snake *)malloc(sizeof(Snake) * 1);
-  snake->head = init_head(x, y, PLAYER_HEAD, DOWN);
+  snake->head = init_head(x, y, DOWN);
   snake->body = init_body(PLAYER_BODY);
+  snake->repr = PLAYER_HEAD;
+  snake->draw = (snake_draw);
   return snake;
 }
 
-Head init_head(int x, int y, char repr, Movement mov) {
+Head init_head(int x, int y, Movement mov) {
   Head c;
   c.position.y = y;
   c.position.x = x;
-  c.repr = repr;
   c.movement = mov;
   return c;
 }
@@ -99,11 +117,47 @@ void snake_check_bounds(Snake *self, int height, int width) {
     self->head.position.x = 1;
 }
 
+void food_draw(void *_self, WINDOW *at) {
+  Food *self = (Food *)_self;
+  mvwaddch(at, self->position.y, self->position.x, self->repr);
+}
+
 Food *food_gen(int height, int width, char repr) {
   Food *f = (Food *)malloc(sizeof(Food));
   srand(time(NULL));
-  f->position.y = rand() % height;
-  f->position.x = rand() % width;
+  int x, y;
+  while (true) {
+    y = rand() % height;
+    x = rand() % width;
+    nob_da_foreach(Point, p, &b) {
+      if (p->x != x && p->y != y) {
+        break;
+      }
+    }
+  }
+  f->position.x = x;
+  f->position.y = y;
+  nob_da_append(&c, f->position);
   f->repr = repr;
+  f->draw = (food_draw);
   return f;
+}
+
+int snake_eat_food(Snake *snake, Board *c) {
+  int i = 0;
+  nob_da_foreach(Point, p, c) {
+    if (snake->head.position.x == p->x && snake->head.position.y == p->y) {
+      nob_da_remove_unordered(c, i);
+      return 1;
+    }
+  }
+  return 0;
+}
+
+Board *board_init(void) {
+  Board *b = (Board *)malloc(sizeof(Board));
+  b->capacity = 0;
+  b->count = 0;
+  b->items = NULL;
+  return b;
 }

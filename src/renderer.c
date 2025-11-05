@@ -18,21 +18,14 @@ WINDOW *render_init_game_window(int height, int width) {
 
 int render_should_quit(char input) { return input == 'q' ? 1 : 0; }
 
-void render_frame_loop(WINDOW *game, Snake *snake) {
+void render_frame_loop(WINDOW *game, DrawableArray *objects) {
   werase(game);
   box(game, 0, 0);
-  render_draw(game, snake);
+  for (Drawable *d = *(objects)->items;
+       d < *(objects)->items + (objects)->count; ++d) {
+    d->draw(d, game);
+  }
   wrefresh(game);
 }
 
-void render_draw(WINDOW *at, Snake *snake) {
-  int h, w;
-  getmaxyx(at, h, w);
-  snake_check_bounds(snake, h, w);
-  getmaxyx(at, h, w);
-  nob_da_foreach(Point, p, &snake->body) {
-    mvwaddch(at, p->y, p->x, snake->body.repr);
-  }
-  mvwaddch(at, snake->head.position.y, snake->head.position.x,
-           snake->head.repr);
-}
+void render_draw(WINDOW *at, Drawable *object) { object->draw(object, at); }

@@ -5,9 +5,14 @@
 #define HEIGHT 40
 #include <curses.h>
 
-void render_draw(WINDOW *at, Snake *snake);
+typedef struct {
+  Drawable **items;
+  size_t count;
+  size_t capacity;
+} DrawableArray;
+
 WINDOW *render_init_game_window(int height, int width);
 int render_should_quit(char input);
-void render_frame_loop(WINDOW *game, Snake *snake);
-void render_draw(WINDOW *at, Snake *snake);
+void render_frame_loop(WINDOW *game, DrawableArray *objects);
+void render_draw(WINDOW *at, Drawable *object);
 #endif
