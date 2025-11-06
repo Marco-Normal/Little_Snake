@@ -9,7 +9,7 @@ typedef struct {
   int y;
 } Point;
 typedef struct {
-  int *items;
+  Point *items;
   size_t count;
   size_t capacity;
   size_t width;

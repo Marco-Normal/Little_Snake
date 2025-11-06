@@ -2,13 +2,16 @@
 #include "../include/debug.h"
 #include "../include/nob.h"
 #include <ncurses.h>
-
+#include <pthread.h>
+#include <semaphore.h>
+extern sem_t n_food;
+extern pthread_mutex_t mutex;
 Head init_head(int x, int y, Movement mov);
 Body init_body(char repr);
-int snake_eat_food(Snake *snake, Board *c);
-void snake_update(Snake *self, Board *c, Board *food_board) {
+int snake_eat_food(Snake *snake, FoodArray *c);
+void snake_update(Snake *self, Board *c, FoodArray *food_board) {
   int grow = snake_eat_food(self, food_board);
-  printf("grow: %d\n", grow);
+  debug_log("Should grow: %d\n", grow);
   Point old_head = self->head.position;
   snake_movement(self);
   Point prev_pos = old_head;
@@ -20,7 +23,7 @@ void snake_update(Snake *self, Board *c, Board *food_board) {
   }
 
   if (grow) {
-    nob_da_append(c, prev_pos.x * prev_pos.y);
+    nob_da_append(c, prev_pos);
     nob_da_append(&self->body, prev_pos);
   }
 }
@@ -119,19 +122,22 @@ void snake_check_bounds(Snake *self, int height, int width) {
     self->head.position.x = 1;
 }
 
-int snake_eat_food(Snake *snake, Board *c) {
-  int i = 0;
-  nob_da_foreach(int, p, c) {
-    debug_log("Checando ponto (%d, %d)", X_POS(*p, c->width),
-              Y_POS(*p, c->height));
-    debug_log("Contra: (%d, %d)", snake->head.position.x,
-              snake->head.position.y);
-    if (snake->head.position.x == X_POS(*p, c->width) &&
-        snake->head.position.y == Y_POS(*p, c->height)) {
+int snake_eat_food(Snake *snake, FoodArray *c) {
+  int head_x = snake->head.position.x;
+  int head_y = snake->head.position.y;
+  pthread_mutex_lock(&mutex);
+  for (size_t i = 0; i < c->count; i++) {
+    Food *d = c->items[i];
+    debug_log("Checando (%d, %d)", d->position.x, d->position.y);
+    debug_log("Contra (%d, %d)", head_x, head_y);
+    debug_log("Number of food: %d", c->count);
+    if (d->position.x == head_x && d->position.y == head_y) {
       nob_da_remove_unordered(c, i);
+      sem_post(&n_food);
+      pthread_mutex_unlock(&mutex);
       return 1;
     }
-    i++;
   }
+  pthread_mutex_unlock(&mutex);
   return 0;
 }

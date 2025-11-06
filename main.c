@@ -1,47 +1,69 @@
 #include "include/food.h"
 #include "include/utils.h"
+#include <bits/pthreadtypes.h>
+#include <sched.h>
 #define NOB_IMPLEMENTATION
 #include "include/cobrinha.h"
 #include "include/debug.h"
 #include "include/nob.h"
 #include "include/renderer.h"
 #include <curses.h>
+#include <pthread.h>
+#include <semaphore.h>
 #include <unistd.h>
 
 WINDOW *debug_win = NULL;
 bool debug_enabled = true; // Toggle with keypress!
+FoodArray f_array = {0};
+sem_t n_food;
+int game_running = 0;
+
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+pthread_mutex_t rand_mutex = PTHREAD_MUTEX_INITIALIZER;
+
 int main(void) {
+  srand(time(NULL));
+  sem_init(&n_food, 0, 20);
   WINDOW *game = render_init_game_window(HEIGHT, WIDTH);
   Snake *snake = snake_init(WIDTH / 2, HEIGHT / 2);
-  init_debug_console(5);
   DrawableArray objects = {0};
-  nob_da_append(&objects, (void *)snake);
   Board board = board_init(WIDTH, HEIGHT);
-  nob_da_append(&board, snake->head.position.x * snake->head.position.y);
-  Food *f = food_gen(HEIGHT, WIDTH, FOOD, &board);
-  Board food_board = board_init(WIDTH, HEIGHT);
-  nob_da_append(&food_board, f->position.x * f->position.y);
-  nob_da_append(&objects, (void *)f);
+  init_debug_console(5);
+  nob_da_append(&objects, (void *)snake);
+  nob_da_append(&board, snake->head.position);
+  FoodParams p = {.height = HEIGHT - 10,
+                  .width = WIDTH - 10,
+                  .repr = FOOD,
+                  .b = &board,
+                  .food_array = &f_array};
+  pthread_t food_thread;
+  pthread_create(&food_thread, NULL, food_routine, (void *)(&p));
+  /* pthread_join(food_thread, NULL); */
+  game_running = 1;
   int tecla;
-  while (1) {
+  while (game_running) {
     tecla = getch();
     if (render_should_quit(tecla))
       break;
-
-    werase(debug_win); // Clear previous debug text
+    if (debug_enabled) {
+      werase(debug_win);
+    }
+    werase(game);
     snake_change_direction(snake, tecla);
-    snake_update(snake, &board, &food_board);
+    snake_update(snake, &board, &f_array);
     render_frame_loop(game, &objects);
-    wrefresh(debug_win);
-
-    // Check for toggle key (e.g., F1)
+    render_draw_food_array(game, &f_array);
+    if (debug_enabled) {
+      wrefresh(debug_win);
+    }
+    wrefresh(game);
     if (tecla == KEY_F(1)) {
       toggle_debug_console();
     }
     if (snake_check_collision(snake)) {
       break;
     }
-    usleep(100000 * 1); // 10 FPS
+    usleep(100000 * 1);
   }
   endwin();
   return 0;
