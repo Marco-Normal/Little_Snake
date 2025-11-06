@@ -21,8 +21,8 @@ int render_should_quit(char input) { return input == 'q' ? 1 : 0; }
 void render_frame_loop(WINDOW *game, DrawableArray *objects) {
   werase(game);
   box(game, 0, 0);
-  for (Drawable *d = *(objects)->items;
-       d < *(objects)->items + (objects)->count; ++d) {
+  for (size_t i = 0; i < objects->count; i++) {
+    Drawable *d = objects->items[i];
     d->draw(d, game);
   }
   wrefresh(game);

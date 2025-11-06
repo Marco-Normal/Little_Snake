@@ -7,7 +7,7 @@
 # Default parameters (can be overridden by passing arguments to make)
 # Compiler and flags
 CC ?= gcc
-CFLAGS ?= -lm -Wall -Wextra -g -lc
+CFLAGS ?= -lm -Wall -Wextra -ggdb -lc
 TARGET ?= Main
 ZIP_NAME ?= project.zip
 LINKER_FLAGS ?= -lncurses

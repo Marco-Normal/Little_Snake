@@ -1,24 +1,26 @@
 #include "../include/cobrinha.h"
+#include "../include/debug.h"
 #include "../include/nob.h"
 #include <ncurses.h>
 
-Board b = {0};
-Board c = {0};
 Head init_head(int x, int y, Movement mov);
 Body init_body(char repr);
 int snake_eat_food(Snake *snake, Board *c);
-void snake_update(Snake *self) {
-  int grow = snake_eat_food(self, &c);
+void snake_update(Snake *self, Board *c, Board *food_board) {
+  int grow = snake_eat_food(self, food_board);
+  printf("grow: %d\n", grow);
   Point old_head = self->head.position;
   snake_movement(self);
   Point prev_pos = old_head;
   for (size_t i = 0; i < self->body.count; ++i) {
     Point current_pos = self->body.items[i];
     self->body.items[i] = prev_pos;
+    /* c->items[i] = prev_pos.x * prev_pos.y; */
     prev_pos = current_pos;
   }
 
   if (grow) {
+    nob_da_append(c, prev_pos.x * prev_pos.y);
     nob_da_append(&self->body, prev_pos);
   }
 }
@@ -117,47 +119,19 @@ void snake_check_bounds(Snake *self, int height, int width) {
     self->head.position.x = 1;
 }
 
-void food_draw(void *_self, WINDOW *at) {
-  Food *self = (Food *)_self;
-  mvwaddch(at, self->position.y, self->position.x, self->repr);
-}
-
-Food *food_gen(int height, int width, char repr) {
-  Food *f = (Food *)malloc(sizeof(Food));
-  srand(time(NULL));
-  int x, y;
-  while (true) {
-    y = rand() % height;
-    x = rand() % width;
-    nob_da_foreach(Point, p, &b) {
-      if (p->x != x && p->y != y) {
-        break;
-      }
-    }
-  }
-  f->position.x = x;
-  f->position.y = y;
-  nob_da_append(&c, f->position);
-  f->repr = repr;
-  f->draw = (food_draw);
-  return f;
-}
-
 int snake_eat_food(Snake *snake, Board *c) {
   int i = 0;
-  nob_da_foreach(Point, p, c) {
-    if (snake->head.position.x == p->x && snake->head.position.y == p->y) {
+  nob_da_foreach(int, p, c) {
+    debug_log("Checando ponto (%d, %d)", X_POS(*p, c->width),
+              Y_POS(*p, c->height));
+    debug_log("Contra: (%d, %d)", snake->head.position.x,
+              snake->head.position.y);
+    if (snake->head.position.x == X_POS(*p, c->width) &&
+        snake->head.position.y == Y_POS(*p, c->height)) {
       nob_da_remove_unordered(c, i);
       return 1;
     }
+    i++;
   }
   return 0;
-}
-
-Board *board_init(void) {
-  Board *b = (Board *)malloc(sizeof(Board));
-  b->capacity = 0;
-  b->count = 0;
-  b->items = NULL;
-  return b;
 }
