@@ -1,12 +1,13 @@
 #ifndef UTILS_H
 #define UTILS_H
 #include <stdlib.h>
-#define X_POS(value, width) value / width
-#define Y_POS(value, height) value % height
+#define INDEX(x, y, width) ((x) + (y * width))
+#define EMPTY '.'
 typedef enum { UP = 1, DOWN, RIGHT, LEFT } Movement;
 typedef struct {
-  int x;
-  int y;
+  size_t x;
+  size_t y;
+  char repr;
 } Point;
 typedef struct {
   Point *items;
@@ -17,4 +18,6 @@ typedef struct {
 } Board;
 
 Board board_init(size_t width, size_t height);
+void board_change_repr(Board *b, const Point point, const char repr);
+Point *board_get_point(const Board *b, const Point point);
 #endif

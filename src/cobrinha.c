@@ -6,7 +6,7 @@
 #include <semaphore.h>
 extern sem_t n_food;
 extern pthread_mutex_t mutex;
-Head init_head(int x, int y, Movement mov);
+Head init_head(size_t x, size_t y, Movement mov);
 Body init_body(char repr);
 int snake_eat_food(Snake *snake, FoodArray *c);
 void snake_update(Snake *self, Board *c, FoodArray *food_board) {
@@ -23,7 +23,7 @@ void snake_update(Snake *self, Board *c, FoodArray *food_board) {
   }
 
   if (grow) {
-    nob_da_append(c, prev_pos);
+    board_change_repr(c, prev_pos, PLAYER_BODY);
     nob_da_append(&self->body, prev_pos);
   }
 }
@@ -49,7 +49,7 @@ void snake_draw(void *_self, WINDOW *at) {
   return;
 }
 
-Snake *snake_init(int x, int y) {
+Snake *snake_init(size_t x, size_t y) {
   Snake *snake = (Snake *)malloc(sizeof(Snake) * 1);
   snake->head = init_head(x, y, DOWN);
   snake->body = init_body(PLAYER_BODY);
@@ -58,7 +58,7 @@ Snake *snake_init(int x, int y) {
   return snake;
 }
 
-Head init_head(int x, int y, Movement mov) {
+Head init_head(size_t x, size_t y, Movement mov) {
   Head c;
   c.position.y = y;
   c.position.x = x;
@@ -111,7 +111,7 @@ void snake_change_direction(Snake *self, char command) {
   }
 }
 
-void snake_check_bounds(Snake *self, int height, int width) {
+void snake_check_bounds(Snake *self, size_t height, size_t width) {
   if (self->head.position.y < 1)
     self->head.position.y = height - 2;
   if (self->head.position.y >= height - 1)
@@ -123,8 +123,8 @@ void snake_check_bounds(Snake *self, int height, int width) {
 }
 
 int snake_eat_food(Snake *snake, FoodArray *c) {
-  int head_x = snake->head.position.x;
-  int head_y = snake->head.position.y;
+  size_t head_x = snake->head.position.x;
+  size_t head_y = snake->head.position.y;
   pthread_mutex_lock(&mutex);
   for (size_t i = 0; i < c->count; i++) {
     Food *d = c->items[i];

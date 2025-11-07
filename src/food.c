@@ -1,5 +1,4 @@
 #include "../include/food.h"
-#include "../include/debug.h"
 #include "../include/nob.h"
 #include <pthread.h>
 #include <semaphore.h>
@@ -24,7 +23,7 @@ Food *food_gen(int height, int width, char repr, Board *b) {
     pthread_mutex_unlock(&rand_mutex);
     int found = 0;
     nob_da_foreach(Point, p, b) {
-      if (p->x != x && p->y != y) {
+      if (p->repr == EMPTY) {
         found = 1;
         break;
       }
@@ -42,16 +41,14 @@ Food *food_gen(int height, int width, char repr, Board *b) {
 
 void *food_routine(void *params) {
   FoodParams *p = (FoodParams *)params;
-  int value;
-  sleep(2);
   while (game_running) {
-    sem_getvalue(&n_food, &value);
-    debug_log("Sem value: %d", value);
     sem_wait(&n_food);
-    Food *f = food_gen(p->height, p->width, p->repr, p->b);
     pthread_mutex_lock(&mutex);
+    Food *f = food_gen(p->height, p->width, p->repr, p->b);
     nob_da_append(p->food_array, f);
+    board_change_repr(p->b, f->position, f->repr);
     pthread_mutex_unlock(&mutex);
+    sleep(1);
   }
   return 0;
 }

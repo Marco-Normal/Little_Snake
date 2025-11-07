@@ -1,7 +1,9 @@
 #include "include/food.h"
+#include "include/search.h"
 #include "include/utils.h"
 #include <bits/pthreadtypes.h>
 #include <sched.h>
+#include <search.h>
 #define NOB_IMPLEMENTATION
 #include "include/cobrinha.h"
 #include "include/debug.h"
@@ -13,7 +15,7 @@
 #include <unistd.h>
 
 WINDOW *debug_win = NULL;
-bool debug_enabled = true; // Toggle with keypress!
+bool debug_enabled = true;
 FoodArray f_array = {0};
 sem_t n_food;
 int game_running = 0;
@@ -30,16 +32,22 @@ int main(void) {
   Board board = board_init(WIDTH, HEIGHT);
   init_debug_console(5);
   nob_da_append(&objects, (void *)snake);
+  board_change_repr(&board, snake->head.position, snake->repr);
   nob_da_append(&board, snake->head.position);
-  FoodParams p = {.height = HEIGHT - 10,
-                  .width = WIDTH - 10,
+  FoodParams p = {.height = HEIGHT - 2,
+                  .width = WIDTH - 2,
                   .repr = FOOD,
                   .b = &board,
                   .food_array = &f_array};
   pthread_t food_thread;
   pthread_create(&food_thread, NULL, food_routine, (void *)(&p));
-  /* pthread_join(food_thread, NULL); */
   game_running = 1;
+  /* pthread_t search_thread; */
+  SearchParameterList s = {
+      .b = &board, .f = &f_array, .s = snake, .search = dfs};
+  /* pthread_create(&search_thread, NULL, search_routine, (void *)(&s)); */
+  MovementsToMake *m = (MovementsToMake *)search_routine((void *)&s);
+  /* pthread_join(search_thread, (void **)m); */
   int tecla;
   while (game_running) {
     tecla = getch();
@@ -49,7 +57,13 @@ int main(void) {
       werase(debug_win);
     }
     werase(game);
-    snake_change_direction(snake, tecla);
+    if (m->count > 0) {
+      Movement mov = nob_da_last(m);
+      nob_da_remove_unordered(m, m->count);
+      snake->head.movement = mov;
+    } else {
+      snake_change_direction(snake, tecla);
+    }
     snake_update(snake, &board, &f_array);
     render_frame_loop(game, &objects);
     render_draw_food_array(game, &f_array);
