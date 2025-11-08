@@ -1,12 +1,11 @@
 #ifndef COBRINHA_H
 #define COBRINHA_H
-#define PLAYER_HEAD '@'
-#define PLAYER_BODY '#'
 #include "drawable.h"
 #include "food.h"
 #include "utils.h"
+#define PLAYER_HEAD '@'
+#define PLAYER_BODY '#'
 #include <stdlib.h>
-
 typedef struct {
   Point position;
   Movement movement;
@@ -23,6 +22,11 @@ typedef struct {
   Head head;
   Body body;
 } Snake;
+
+typedef struct {
+  Snake *s;
+  MovementsToMake *movs;
+} SnakeAi;
 
 void snake_movement(Snake *self);
 void snake_check_bounds(Snake *self, size_t height, size_t width);

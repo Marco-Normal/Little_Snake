@@ -4,8 +4,7 @@
 #include <ncurses.h>
 #include <pthread.h>
 #include <semaphore.h>
-extern sem_t n_food;
-extern pthread_mutex_t mutex;
+extern GameState state;
 Head init_head(size_t x, size_t y, Movement mov);
 Body init_body(char repr);
 int snake_eat_food(Snake *snake, FoodArray *c);
@@ -21,7 +20,6 @@ void snake_update(Snake *self, Board *c, FoodArray *food_board) {
     /* c->items[i] = prev_pos.x * prev_pos.y; */
     prev_pos = current_pos;
   }
-
   if (grow) {
     board_change_repr(c, prev_pos, PLAYER_BODY);
     nob_da_append(&self->body, prev_pos);
@@ -125,7 +123,7 @@ void snake_check_bounds(Snake *self, size_t height, size_t width) {
 int snake_eat_food(Snake *snake, FoodArray *c) {
   size_t head_x = snake->head.position.x;
   size_t head_y = snake->head.position.y;
-  pthread_mutex_lock(&mutex);
+  pthread_mutex_lock(&state.mutex);
   for (size_t i = 0; i < c->count; i++) {
     Food *d = c->items[i];
     debug_log("Checando (%d, %d)", d->position.x, d->position.y);
@@ -133,11 +131,11 @@ int snake_eat_food(Snake *snake, FoodArray *c) {
     debug_log("Number of food: %d", c->count);
     if (d->position.x == head_x && d->position.y == head_y) {
       nob_da_remove_unordered(c, i);
-      sem_post(&n_food);
-      pthread_mutex_unlock(&mutex);
+      sem_post(&state.n_food);
+      pthread_mutex_unlock(&state.mutex);
       return 1;
     }
   }
-  pthread_mutex_unlock(&mutex);
+  pthread_mutex_unlock(&state.mutex);
   return 0;
 }

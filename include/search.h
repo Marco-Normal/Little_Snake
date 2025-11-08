@@ -1,18 +1,11 @@
 #ifndef SEARCH_H_
 #define SEARCH_H_
-
 #include "cobrinha.h"
 #include "food.h"
 #include "utils.h"
-typedef struct {
-  Movement *items;
-  size_t count;
-  size_t capacity;
-} MovementsToMake;
 
 typedef MovementsToMake *(*SearchAlgorithm)(const Point, const Board *,
                                             const FoodArray *);
-
 typedef struct {
   Board *b;
   FoodArray *f;

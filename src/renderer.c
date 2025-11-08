@@ -3,7 +3,7 @@
 #include "../include/nob.h"
 #include <curses.h>
 #include <pthread.h>
-extern pthread_mutex_t mutex;
+extern GameState state;
 WINDOW *render_init_game_window(int height, int width) {
   initscr();
   noecho();
@@ -31,11 +31,11 @@ void render_frame_loop(WINDOW *game, DrawableArray *objects) {
 void render_draw(WINDOW *at, Drawable *object) { object->draw(object, at); }
 
 void render_draw_food_array(WINDOW *at, FoodArray *f) {
-  pthread_mutex_lock(&mutex);
+  pthread_mutex_lock(&state.mutex);
   for (size_t i = 0; i < f->count; i++) {
     Food *d = f->items[i];
     debug_log("Drawing %i at (%d, %d)", i, d->position.x, d->position.y);
     d->draw(d, at);
   }
-  pthread_mutex_unlock(&mutex);
+  pthread_mutex_unlock(&state.mutex);
 }

@@ -1,9 +1,9 @@
 #ifndef FOOD_H
 #define FOOD_H
-#include "drawable.h"
-#include "utils.h"
 #define FOOD 'o'
 #define MAX_FOOD 20
+#include "drawable.h"
+#include "utils.h"
 typedef struct {
   DRAWABLE_FIELDS;
   Point position;

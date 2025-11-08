@@ -1,6 +1,7 @@
 #ifndef RENDERER_H
 #define RENDERER_H
-#include "cobrinha.h"
+#include "drawable.h"
+#include "food.h"
 #define WIDTH 80
 #define HEIGHT 40
 #include <curses.h>
