@@ -1,28 +1,20 @@
 #ifndef FOOD_H
 #define FOOD_H
-#define FOOD 'o'
+#define FOOD_REPR 'o'
 #define MAX_FOOD 20
-#include "drawable.h"
-#include "utils.h"
+#include "entity.h"
 typedef struct {
-  DRAWABLE_FIELDS;
+  ENTITY_FIELDS;
   Point position;
 } Food;
-
-typedef struct {
-  Food **items;
-  size_t count;
-  size_t capacity;
-} FoodArray;
 
 typedef struct {
   int height;
   int width;
   char repr;
-  Board *b;
-  FoodArray *food_array;
+  EntityArray *objects;
 } FoodParams;
 
-Food *food_gen(int height, int width, char repr, Board *b);
+Food *food_gen(int height, int width, char repr, EntityArray *objects);
 void *food_routine(void *params);
 #endif

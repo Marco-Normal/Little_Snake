@@ -10,17 +10,24 @@ void food_draw(void *_self, WINDOW *at) {
   mvwaddch(at, self->position.y, self->position.x, self->repr);
 }
 
-Food *food_gen(int height, int width, char repr, Board *b) {
+int food_collision(void *_self, Point *with) {
+  Food *self = (Food *)_self;
+  return (self->position.x == with->x) && (self->position.y == with->y);
+}
+
+Food *food_gen(int height, int width, char repr, EntityArray *objects) {
   Food *f = (Food *)malloc(sizeof(Food));
   int x, y;
   while (true) {
     pthread_mutex_lock(&state.rand_mutex);
-    y = rand() % height;
-    x = rand() % width;
+    y = rand() % (height);
+    x = rand() % (width);
+    Point p = {.x = x, .y = y};
     pthread_mutex_unlock(&state.rand_mutex);
     int found = 0;
-    nob_da_foreach(Point, p, b) {
-      if (p->repr == EMPTY) {
+    for (size_t i = 0; i < objects->count; i++) {
+      Entity *d = objects->items[i];
+      if (!d->collision(d, &p)) {
         found = 1;
         break;
       }
@@ -33,6 +40,8 @@ Food *food_gen(int height, int width, char repr, Board *b) {
   f->position.y = y;
   f->repr = repr;
   f->draw = (food_draw);
+  f->collision = (food_collision);
+  f->type = FOOD;
   return f;
 }
 
@@ -51,9 +60,8 @@ void *food_routine(void *params) {
       sem_post(&state.n_food);
       break;
     }
-    Food *f = food_gen(p->height, p->width, p->repr, p->b);
-    nob_da_append(p->food_array, f);
-    board_change_repr(p->b, f->position, f->repr);
+    Food *f = food_gen(p->height, p->width, p->repr, p->objects);
+    nob_da_append(p->objects, (void *)f);
     pthread_mutex_unlock(&state.mutex);
     sleep(1);
   }

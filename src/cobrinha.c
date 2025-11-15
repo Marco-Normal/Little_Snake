@@ -1,5 +1,4 @@
 #include "../include/cobrinha.h"
-#include "../include/debug.h"
 #include "../include/nob.h"
 #include <ncurses.h>
 #include <pthread.h>
@@ -7,26 +6,23 @@
 extern GameState state;
 Head init_head(size_t x, size_t y, Movement mov);
 Body init_body(char repr);
-int snake_eat_food(Snake *snake, FoodArray *c);
-void snake_update(Snake *self, Board *c, FoodArray *food_board) {
-  int grow = snake_eat_food(self, food_board);
-  debug_log("Should grow: %d\n", grow);
+int snake_eat_food(Snake *snake, EntityArray *c);
+void snake_update(Snake *self, EntityArray *board) {
+  int grow = snake_eat_food(self, board);
   Point old_head = self->head.position;
   snake_movement(self);
   Point prev_pos = old_head;
   for (size_t i = 0; i < self->body.count; ++i) {
     Point current_pos = self->body.items[i];
     self->body.items[i] = prev_pos;
-    /* c->items[i] = prev_pos.x * prev_pos.y; */
     prev_pos = current_pos;
   }
   if (grow) {
-    board_change_repr(c, prev_pos, PLAYER_BODY);
     nob_da_append(&self->body, prev_pos);
   }
 }
 
-int snake_check_collision(Snake *self) {
+int snake_check_self_collision(Snake *self) {
   nob_da_foreach(Point, p, &self->body) {
     if (p->x == self->head.position.x && p->y == self->head.position.y) {
       return 1;
@@ -35,11 +31,22 @@ int snake_check_collision(Snake *self) {
   return 0;
 }
 
+int snake_check_collision(void *_self, Point *with) {
+  Snake *self = (Snake *)_self;
+  nob_da_foreach(Point, p, &self->body) {
+    if (p->x == with->x && p->y == with->y) {
+      return 1;
+    }
+  }
+  return (self->head.position.x == with->x) &&
+         (self->head.position.y == with->y);
+}
+
 void snake_draw(void *_self, WINDOW *at) {
   Snake *self = (Snake *)_self;
   int h, w;
   getmaxyx(at, h, w);
-  snake_check_bounds(self, h, w);
+  snake_check_bounds(self, h - 2, w - 2);
   nob_da_foreach(Point, p, &self->body) {
     mvwaddch(at, p->y, p->x, self->body.repr);
   }
@@ -53,6 +60,8 @@ Snake *snake_init(size_t x, size_t y) {
   snake->body = init_body(PLAYER_BODY);
   snake->repr = PLAYER_HEAD;
   snake->draw = (snake_draw);
+  snake->collision = (snake_check_collision);
+  snake->type = SNAKE;
   return snake;
 }
 
@@ -110,28 +119,21 @@ void snake_change_direction(Snake *self, char command) {
 }
 
 void snake_check_bounds(Snake *self, size_t height, size_t width) {
-  if (self->head.position.y < 1)
-    self->head.position.y = height - 2;
-  if (self->head.position.y >= height - 1)
-    self->head.position.y = 1;
-  if (self->head.position.x < 1)
-    self->head.position.x = width - 2;
-  if (self->head.position.x >= width - 1)
-    self->head.position.x = 1;
+  self->head.position.y = (self->head.position.y + height) % (height);
+  self->head.position.x = (self->head.position.x + width) % (width);
 }
 
-int snake_eat_food(Snake *snake, FoodArray *c) {
-  size_t head_x = snake->head.position.x;
-  size_t head_y = snake->head.position.y;
+int snake_eat_food(Snake *snake, EntityArray *board) {
   pthread_mutex_lock(&state.mutex);
-  for (size_t i = 0; i < c->count; i++) {
-    Food *d = c->items[i];
-    debug_log("Checando (%d, %d)", d->position.x, d->position.y);
-    debug_log("Contra (%d, %d)", head_x, head_y);
-    debug_log("Number of food: %d", c->count);
-    if (d->position.x == head_x && d->position.y == head_y) {
-      nob_da_remove_unordered(c, i);
+  for (size_t i = 0; i < board->count; i++) {
+    Entity *d = board->items[i];
+    if (d->type == SNAKE) {
+      continue;
+    }
+    if (d->collision(d, &snake->head.position)) {
+      nob_da_remove_unordered(board, i);
       sem_post(&state.n_food);
+      state.score++;
       pthread_mutex_unlock(&state.mutex);
       return 1;
     }
