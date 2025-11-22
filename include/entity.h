@@ -9,15 +9,25 @@ typedef enum { SNAKE = 1, FOOD } Type;
   int (*collision)(void *self, Point *with);                                   \
   Type type;
 
-// Classe abstrata para todos os itens que podem ser desenhados
+/**
+ * @struct Entity
+ * Classe abstrata que representa todas as entidades no nosso jogo.
+ * Serve para unifircarmos algumas  interfaces de funções, em principal para
+ * o renderização. Basicamente ele possui uma representação, qual o tipo, se é
+ * a cobrinha ou comida, e ponteiros para funções de utilidade.
+ */
 typedef struct {
-  ENTITY_FIELDS
+  ENTITY_FIELDS /**< campos necessários */
 } Entity;
 
+/**
+ * @struct EntityArray
+ * Array dinâmico de entidades. Puramente conveniência
+ */
 typedef struct {
-  Entity **items;
-  size_t count;
-  size_t capacity;
+  Entity **items;  /**< Ponteiros de entidades */
+  size_t count;    /**< Número de entidades atuais */
+  size_t capacity; /**< Capacidade do array */
 } EntityArray;
 
 #endif
