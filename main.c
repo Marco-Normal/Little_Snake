@@ -5,7 +5,6 @@
  * uma comidinha, ela gera até 20, controlada por um semáforo. A ideia não é
  * fazer um bom jogo, mas sim utilizar conceitos de threads e de semáforos.
  *
- *
  */
 #include "include/cobrinha.h"
 #include "include/entity.h"
@@ -71,6 +70,13 @@ int main(void) {
   Initializers ini = init();
   WINDOW *game = ini.game;
   Snake *snake = ini.s;
+  /*
+   * NOTE: Esses objetos são compartilhados entre a thread principal e
+   * a thread de comidinha. É necessário que esse array tenha o mesmo
+   * tempo de vida que a thread principal. Como ele é emprestado para
+   * a thread filha, é necessário que ele esteja válido enquanto o a thread
+   * esteja viva também. Como essse é o caso, não temos tanto problemas.
+   */
   EntityArray *objects = ini.objects;
   FoodParams *p = ini.p;
   state.game_running = 1;
