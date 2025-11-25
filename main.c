@@ -1,5 +1,5 @@
 /**
- * Alunos: Marco Túlio Mello Silva (12548657)
+ * Alunos: Marco Túlio Mello Silva (12548657), Augusto Fernandes Ildefonso (15441810), Allan Vitor de Souza Silva (14712657), Lucas Lombardi Castro (13672978)
  *
  * Descrição: Esse é um jogo clássico da cobrinha, porém, invés de gerar apenas
  * uma comidinha, ela gera até 20, controlada por um semáforo. A ideia não é
