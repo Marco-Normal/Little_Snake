@@ -11,7 +11,7 @@
 #include "include/food.h"
 #include "include/nob.h"
 #include "include/renderer.h"
-#include <curses.h>
+#include <ncurses.h>
 #include <pthread.h>
 #include <semaphore.h>
 #include <unistd.h>
