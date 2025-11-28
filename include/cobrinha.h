@@ -6,6 +6,8 @@
 #include "utils.h"
 #define PLAYER_HEAD '@'
 #define PLAYER_BODY '#'
+#define ENEMY_HEAD 'O'
+#define ENEMY_BODY '*'
 #include <stdlib.h>
 typedef struct {
   Point position;
@@ -55,4 +57,31 @@ int snake_check_self_collision(Snake *self);
  * @return Um membro da classe `Snake`
  */
 Snake *snake_init(size_t x, size_t y);
+
+/**
+ * @brief Inicializa a cobrinha inimiga na posição (`x`, `y`), como
+ * movimento padrão para baixo.
+ * @param[in] x Posição inicial
+ * @param[in] y Posição inicial
+ * @return Um membro da classe `Snake`
+ */
+Snake *enemy_snake_init(size_t x, size_t y);
+
+/**
+ * @struct EnemyParams
+ * Parâmetros necessários para a rotina do inimigo
+ */
+typedef struct {
+  Snake *enemy;         /**< Self */
+  EntityArray *objects; /**< Array de entidades */
+  int width;            /**< Largura do jogo */
+  int height;           /**< Altura do jogo */
+} EnemyParams;
+
+/**
+ * @brief Rotina de movimentação da cobrinha inimiga
+ * @param[in,out] arg Aceita como parâmetros a struct `EnemyParams`
+ */
+void *enemy_routine(void *arg);
+
 #endif

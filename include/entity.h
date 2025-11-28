@@ -2,12 +2,12 @@
 #define DRAWABLE_H
 #include "utils.h"
 #include <ncurses.h>
-typedef enum { SNAKE = 1, FOOD } Type;
+typedef enum { SNAKE = 1, FOOD, ENEMY } Type;
 #define ENTITY_FIELDS                                                          \
   char repr;                                                                   \
   void (*draw)(void *self, WINDOW *at);                                        \
   int (*collision)(void *self, Point *with);                                   \
-  Type type;
+  Type type
 
 /**
  * @struct Entity
@@ -17,7 +17,7 @@ typedef enum { SNAKE = 1, FOOD } Type;
  * a cobrinha ou comida, e ponteiros para funções de utilidade.
  */
 typedef struct {
-  ENTITY_FIELDS /**< campos necessários */
+  ENTITY_FIELDS; /**< campos necessários */
 } Entity;
 
 /**

@@ -34,6 +34,7 @@ typedef struct {
   int game_running;            /**< O jogo está rolando? */
   int game_started;            /**< O jogo começou? */
   int score;                   /**< Score atual */
+  int enemy_score;            /**< Score do inimigo */
 } GameState;
 
 #endif

@@ -32,6 +32,7 @@ void render_frame_loop(WINDOW *game, const EntityArray *objects);
 /**
  * @brief Renderiza uma nova janela de game over
  * @param[in] score
+ * @param[in] enemy_score
  */
-void render_show_game_over(int score);
+void render_show_game_over(int score, int enemy_score);
 #endif

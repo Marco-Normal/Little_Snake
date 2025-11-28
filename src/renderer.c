@@ -46,12 +46,11 @@ void render_frame_loop(WINDOW *game, const EntityArray *objects) {
 
 /**
  * @brief Renderiza uma nova janela de game over
- * @details Renderiza, de forma centralizada, uma janela de game over,
- * mostrando o `score` e uma instrução para sair do jogo
  * @param[in] score
+ * @param[in] enemy_score
  */
-void render_show_game_over(int score) {
-  int height = 10;
+void render_show_game_over(int score, int enemy_score) {
+  int height = 12;
   int width = 40;
   int starty = (LINES - height) / 2;
   int startx = (COLS - width) / 2;
@@ -61,11 +60,19 @@ void render_show_game_over(int score) {
 
   const char *title = "GAME OVER";
   mvwprintw(win, 2, (width - strlen(title)) / 2, "%s", title);
-  mvwprintw(win, 4, (width - 20) / 2, "Score Final: %d", score);
-  const char *msg = "Pressione qualquer tecla para sair";
-  mvwprintw(win, 7, (width - strlen(msg)) / 2, "%s", msg);
+  mvwprintw(win, 4, (width - 20) / 2, "Your Score: %d", score);
+  mvwprintw(win, 5, (width - 20) / 2, "Enemy Score: %d", enemy_score);
+
+  const char *res = (score > enemy_score) ? "VOCÊ GANHOU!" : "VOCÊ PERDEU!";
+  mvwprintw(win, 7, (width - strlen(res)) / 2, "%s", res);
+
+  const char *msg = "Pressione `q` para sair";
+  mvwprintw(win, 9, (width - strlen(msg)) / 2, "%s", msg);
   wrefresh(win);
   nodelay(stdscr, FALSE);
-  getch();
+  char tecla = getch();
+  while (!render_should_quit(tecla)) {
+    tecla = getch();
+  }
   delwin(win);
 }

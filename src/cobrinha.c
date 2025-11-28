@@ -57,6 +57,131 @@ Snake *snake_init(size_t x, size_t y) {
   return snake;
 }
 
+Snake *enemy_snake_init(size_t x, size_t y) {
+  Snake *snake = (Snake *)malloc(sizeof(Snake) * 1);
+  snake->head = init_head(x, y, DOWN);
+  snake->body = init_body(ENEMY_BODY);
+  snake->repr = ENEMY_HEAD;
+  snake->draw = (snake_draw);
+  snake->collision = (snake_check_collision);
+  snake->type = ENEMY;
+  return snake;
+}
+
+/**
+ * @brief Define como o inimigo deve andar
+ * @details Função de como o inimigo vai se locomover em direção a comidinha.
+ * A cada passo, ele vai iterar sobre todo nosso array de entidades e e vai
+ * buscar apenas aquelas entidades que são comidas. A partir disso, ele vai
+ * buscar qual comidinha está mais perto, considerando o tabuleiro como toroidal
+ * e vai ir direto para aquela comidinha. Caso, apareça uma comidinha mais
+ * perto, ele vai mudar a direção para aquela comidinha
+ * @param[in,out] self A cobrinha inimiga
+ * @param[out] board Tabuleiro
+ * @param[in] width largura do jogo
+ * @param[in] height Altura do jogo
+ *
+ * Note que, essa função adquire o lock do mutex durante toda busca exaustiva
+ * do tabuleiro. Porém, como no máximo, so podemos ter 20 comidas + 2 cobrinhas
+ * o tempo do lock é pequeno, portanto, aceitável
+ */
+void enemy_ai_step(Snake *self, EntityArray *board, int width, int height) {
+  Point *target_food = NULL;
+  int min_dist = 100000; // Valor de guarda
+
+  pthread_mutex_lock(&state.mutex);
+  for (size_t i = 0; i < board->count; i++) {
+    Entity *e = board->items[i];
+    if (e->type != FOOD) {
+      continue;
+    }
+    Food *f = (Food *)e;
+    int dx = abs((int)f->position.x - (int)self->head.position.x);
+    int dy = abs((int)f->position.y - (int)self->head.position.y);
+    if (dx > width / 2) {
+      dx = width - dx;
+    }
+    if (dy > height / 2) {
+      dy = height - dy;
+    }
+    int dist = dx + dy;
+    if (dist < min_dist) {
+      min_dist = dist;
+      target_food = &f->position;
+    }
+  }
+  if (target_food) {
+    int dx = target_food->x - self->head.position.x;
+    int dy = target_food->y - self->head.position.y;
+
+    if (dx > width / 2) {
+      dx -= width;
+    } else if (dx < -width / 2) {
+      dx += width;
+    }
+    if (dy > height / 2) {
+      dy -= height;
+    } else if (dy < -height / 2) {
+      dy += height;
+    }
+    Movement n_move = self->head.movement;
+    if (abs(dx) > abs(dy)) {
+      if (dx > 0 && self->head.movement != LEFT) {
+        n_move = RIGHT;
+      } else if (dx < 0 && self->head.movement != RIGHT) {
+        n_move = LEFT;
+      } else if (dy != 0) {
+        if (dy > 0 && self->head.movement != UP) {
+          n_move = DOWN;
+        } else if (dy < 0 && self->head.movement != DOWN) {
+          n_move = UP;
+        }
+      }
+    } else {
+      if (dy > 0 && self->head.movement != UP) {
+        n_move = DOWN;
+      } else if (dy < 0 && self->head.movement != DOWN) {
+        n_move = UP;
+      } else if (dx != 0) {
+        if (dx > 0 && self->head.movement != LEFT) {
+          n_move = RIGHT;
+        } else if (dx < 0 && self->head.movement != RIGHT) {
+          n_move = LEFT;
+        }
+      }
+    }
+    self->head.movement = n_move;
+  }
+  pthread_mutex_unlock(&state.mutex);
+  snake_update(self, board);
+}
+
+/**
+ * @brief Rotina do inimigo
+ * @details Novamente, a rotina do inimigo é baseada em esperar o sinal de
+ * começo do jogo. Uma vez iniciado, ele realiza a rotina de achar a comidinha
+ * mais próxima e se locomover para lá. Dorme por 1.5 ms entre cada iteração de
+ * movimentação
+ * @param[in,out] arg Struct EnemyParams
+ */
+void *enemy_routine(void *arg) {
+  EnemyParams *params = (EnemyParams *)arg;
+
+  pthread_mutex_lock(&state.mutex);
+  while (!state.game_started) {
+    pthread_cond_wait(&state.start_signal, &state.mutex);
+  }
+  pthread_mutex_unlock(&state.mutex);
+
+  while (state.game_running) {
+
+    enemy_ai_step(params->enemy, params->objects, params->width,
+                  params->height);
+
+    usleep(150000);
+  }
+  return NULL;
+}
 /**
  * @brief Realiza a checagem se a cobrinha bateu nela mesma
  * @details Para cada ponto do corpo, checamos se a posição da cabeça
@@ -196,13 +321,17 @@ int snake_eat_food(Snake *snake, EntityArray *board) {
   pthread_mutex_lock(&state.mutex);
   for (size_t i = 0; i < board->count; i++) {
     Entity *d = board->items[i];
-    if (d->type == SNAKE) {
+    if (d->type == SNAKE || d->type == ENEMY) {
       continue;
     }
     if (d->collision(d, &snake->head.position)) {
       nob_da_remove_unordered(board, i);
       sem_post(&state.n_food);
-      state.score++;
+      if (snake->type == SNAKE) {
+        state.score++;
+      } else {
+        state.enemy_score++;
+      }
       pthread_mutex_unlock(&state.mutex);
       return 1;
     }
@@ -222,6 +351,7 @@ int snake_eat_food(Snake *snake, EntityArray *board) {
  */
 void snake_update(Snake *self, EntityArray *board) {
   int grow = snake_eat_food(self, board);
+  pthread_mutex_lock(&state.mutex);
   Point old_head = self->head.position;
   snake_movement(self);
   Point prev_pos = old_head;
@@ -233,4 +363,5 @@ void snake_update(Snake *self, EntityArray *board) {
   if (grow) {
     nob_da_append(&self->body, prev_pos);
   }
+  pthread_mutex_unlock(&state.mutex);
 }

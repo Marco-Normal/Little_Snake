@@ -1,24 +1,14 @@
 ##
-# Project 1
+# Little Snake
 # @version 0.1
 
-CC ?= gcc
-# 1. Separate Include paths (CFLAGS)
-INCLUDES := -I./include/ -I./include/ncurses
-CFLAGS   ?= -lm -Wall -Wextra -lc -D_DEFAULT_SOURCE -D_XOPEN_SOURCE=600 $(INCLUDES)
-
-TARGET   ?= Main
-ZIP_NAME ?= project.zip
-
-# 2. Separate Linker paths/libs (LDFLAGS/LDLIBS)
-# Note: -l:filename forces it to look for that exact filename (static)
-LDFLAGS  := -L./lib
-LDLIBS   := -l:libncurses.a -lm
-
+CC        ?= gcc
+CFLAGS    ?= -lm -Wall -Wextra -pedantic -lc -lcurses -O2
+TARGET    ?= Main
+ZIP_NAME  ?= project.zip
 SRC_DIR   := src
 INC_DIR   := include
 BUILD_DIR := build
-
 SRC_MAIN  := main.c
 SRC_FILES := $(wildcard $(SRC_DIR)/*.c)
 OBJ_MAIN  := $(BUILD_DIR)/main.o
@@ -27,33 +17,32 @@ OBJS      := $(OBJ_MAIN) $(OBJ_FILES)
 
 all: $(TARGET)
 
-# Link the executable
+# Estágio final
 $(TARGET): $(OBJS)
 	@echo "Linking $@"
-	# Put LDLIBS at the very end
-	$(CC) $(LDFLAGS) $(CFLAGS) -o $@ $^ $(LDLIBS)
+	$(CC)  $(CFLAGS) -o $@ $^
 
-# Compile main.c
+# Compila a Main
 $(OBJ_MAIN): $(SRC_MAIN)
 	@mkdir -p $(dir $@)
 	@echo "Compiling $<"
 	$(CC) $(CFLAGS) -c -o $@ $<
 
-# Compile source files
+# Compila os outros arquivos para .o
 $(BUILD_DIR)/%.o: $(SRC_DIR)/%.c
 	@mkdir -p $(dir $@)
 	@echo "Compiling $<"
 	$(CC) $(CFLAGS) -c -o $@ $<
 
 run:
-	@TERM=xterm-256color ./$(TARGET)
+	@./$(TARGET)
 
 clean:
-	@echo "Cleaning..."
+	@echo "Limpando..."
 	@rm -rf $(BUILD_DIR) $(TARGET)
 
 zip:
-	@echo "Creating $(ZIP_NAME)..."
+	@echo "Criando $(ZIP_NAME)..."
 	@zip -q -r $(ZIP_NAME) main.c Makefile \
         `find src -name "*.c"` \
         `find include -name "*.h"` \
