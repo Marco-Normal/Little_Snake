@@ -173,8 +173,14 @@ void *enemy_routine(void *arg) {
   }
   pthread_mutex_unlock(&state.mutex);
 
-  while (state.game_running) {
+  while (true) {
 
+    pthread_mutex_lock(&state.mutex);
+    if (!state.game_running) {
+      pthread_mutex_unlock(&state.mutex);
+      break;
+    }
+    pthread_mutex_unlock(&state.mutex);
     enemy_ai_step(params->enemy, params->objects, params->width,
                   params->height);
 
